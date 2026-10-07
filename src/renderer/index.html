@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Claude Pet</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div id="stage" class="mood-idle">
+      <!-- Stats popover (shown on hover, sits directly above the pet) -->
+      <section id="panel" class="interactive" aria-hidden="true">
+        <header class="panel-head">
+          <span id="surface-tag" class="tag">—</span>
+          <span id="model" class="model">—</span>
+        </header>
+
+        <div id="gauges">
+          <div class="gauge">
+            <div class="gauge-top"><span>5-hour</span><span id="five-reset" class="reset">—</span></div>
+            <div class="bar"><div id="five-fill" class="fill"></div></div>
+            <div id="five-pct" class="pct">—</div>
+          </div>
+          <div class="gauge">
+            <div class="gauge-top"><span>7-day</span><span id="seven-reset" class="reset">—</span></div>
+            <div class="bar"><div id="seven-fill" class="fill"></div></div>
+            <div id="seven-pct" class="pct">—</div>
+          </div>
+        </div>
+
+        <div id="waiting" class="waiting">Waiting for first response…</div>
+
+        <footer class="panel-foot">
+          <span id="tokens">0 tokens</span>
+        </footer>
+      </section>
+
+      <!-- Transient speech bubble for reactions -->
+      <div id="speech" aria-hidden="true"></div>
+
+      <!-- The pet itself (draggable) -->
+      <div id="pet" class="interactive">
+        <svg viewBox="0 0 140 124" width="124" height="110" aria-label="pet" shape-rendering="crispEdges">
+          <ellipse id="shadow" cx="70" cy="116" rx="46" ry="5"></ellipse>
+          <g id="body-group">
+            <!-- top bumps (separated by a notch) -->
+            <rect class="body-px" x="30" y="0" width="30" height="20"></rect>
+            <rect class="body-px" x="80" y="0" width="30" height="20"></rect>
+            <!-- torso -->
+            <rect class="body-px" x="20" y="20" width="100" height="70"></rect>
+            <!-- side arm nubs -->
+            <rect class="body-px" x="10" y="50" width="10" height="20"></rect>
+            <rect class="body-px" x="120" y="50" width="10" height="20"></rect>
+            <!-- three legs with two notches -->
+            <rect class="body-px" x="30" y="90" width="20" height="20"></rect>
+            <rect class="body-px" x="60" y="90" width="20" height="20"></rect>
+            <rect class="body-px" x="90" y="90" width="20" height="20"></rect>
+            <!-- eyes -->
+            <rect class="eye-px" x="40" y="30" width="20" height="20"></rect>
+            <rect class="eye-px" x="80" y="30" width="20" height="20"></rect>
+            <text id="emote" x="70" y="15" text-anchor="middle"></text>
+          </g>
+        </svg>
+      </div>
+    </div>
+
+    <script src="pet.js"></script>
+  </body>
+</html>

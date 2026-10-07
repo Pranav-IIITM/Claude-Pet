@@ -1,0 +1,298 @@
+:root {
+  --pet: #ef5f43;
+  --pet-dark: #d4472d;
+  --ok: #3ecf8e;
+  --warn: #f5a623;
+  --crit: #ff4d4f;
+  --panel-bg: rgba(28, 22, 20, 0.92);
+  --panel-fg: #fff3ee;
+  --panel-dim: #d9bdb2;
+  --track: rgba(255, 255, 255, 0.14);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  overflow: hidden;
+  font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+#stage {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0;
+}
+
+/* ---------- Pet (pixel mascot) ---------- */
+#pet {
+  cursor: grab;
+  line-height: 0;
+  filter: drop-shadow(0 5px 7px rgba(0, 0, 0, 0.3));
+  animation: bob 3.4s ease-in-out infinite;
+}
+#pet:active {
+  cursor: grabbing;
+}
+/* quick squash when clicked (overrides mood/idle anim briefly) */
+#pet.poke {
+  animation: poke 0.3s ease;
+}
+@keyframes poke {
+  0% { transform: scale(1, 1); }
+  35% { transform: scale(1.18, 0.82); }
+  70% { transform: scale(0.92, 1.08); }
+  100% { transform: scale(1, 1); }
+}
+
+/* facing direction flips the whole creature */
+#body-group {
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: transform 0.18s ease;
+}
+
+.body-px {
+  fill: var(--pet);
+  transition: fill 0.4s ease;
+}
+.eye-px {
+  fill: #2a1a14;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: blink 4.6s infinite;
+}
+#shadow {
+  fill: rgba(0, 0, 0, 0.26);
+  animation: shadow 3.4s ease-in-out infinite;
+}
+#emote {
+  font-size: 15px;
+  fill: #fff;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+/* ---------- Moods ---------- */
+.mood-idle .body-px {
+  fill: var(--pet);
+}
+
+.mood-working #pet {
+  animation: wiggle 0.5s ease-in-out infinite;
+}
+.mood-working .body-px {
+  fill: #ff7f5e;
+}
+
+.mood-sleepy #pet {
+  animation: breathe 5.5s ease-in-out infinite;
+}
+.mood-sleepy .body-px {
+  fill: #8a7d78;
+}
+.mood-sleepy .eye-px {
+  animation: none;
+  transform: scaleY(0.14);
+}
+.mood-sleepy #emote {
+  opacity: 0.9;
+}
+
+.mood-stressed #pet {
+  animation: shake 0.3s ease-in-out infinite;
+}
+.mood-stressed .body-px {
+  fill: var(--warn);
+}
+.mood-stressed #emote {
+  opacity: 1;
+}
+
+.mood-panic #pet {
+  animation: shake 0.14s ease-in-out infinite;
+}
+.mood-panic .body-px {
+  fill: var(--crit);
+}
+.mood-panic #emote {
+  opacity: 1;
+}
+
+/* walking hop (overrides mood anim while roaming) */
+#stage.walking #pet {
+  animation: hop 0.42s ease-in-out infinite;
+}
+
+@keyframes bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+@keyframes breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.03); }
+}
+@keyframes wiggle {
+  0%, 100% { transform: rotate(-4deg); }
+  50% { transform: rotate(4deg); }
+}
+@keyframes hop {
+  0%, 100% { transform: translateY(0); }
+  40% { transform: translateY(-9px); }
+}
+@keyframes shake {
+  0%, 100% { transform: translateX(-2px); }
+  50% { transform: translateX(2px); }
+}
+@keyframes blink {
+  0%, 92%, 100% { transform: scaleY(1); }
+  96% { transform: scaleY(0.1); }
+}
+@keyframes shadow {
+  0%, 100% { transform: scaleX(1); opacity: 0.26; }
+  50% { transform: scaleX(0.82); opacity: 0.16; }
+}
+
+/* ---------- Speech bubble ---------- */
+#speech {
+  max-width: 180px;
+  margin-bottom: 4px;
+  padding: 6px 11px;
+  border-radius: 12px;
+  background: #fff;
+  color: #2a1a14;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+  opacity: 0;
+  transform: translateY(6px) scale(0.9);
+  transition: opacity 0.18s ease, transform 0.18s ease;
+  position: relative;
+}
+#speech::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -5px;
+  width: 10px;
+  height: 10px;
+  background: #fff;
+  transform: translateX(-50%) rotate(45deg);
+}
+#speech.show {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+/* ---------- Stats popover ---------- */
+#panel {
+  width: 212px;
+  margin-bottom: 6px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--panel-bg);
+  color: var(--panel-fg);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.45);
+  opacity: 0;
+  transform: translateY(8px);
+  pointer-events: none;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+  font-size: 12px;
+}
+#panel.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.tag {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: rgba(238, 108, 77, 0.24);
+  color: #ffd9cc;
+}
+.model {
+  color: var(--panel-dim);
+  font-size: 11px;
+}
+
+.gauge + .gauge {
+  margin-top: 10px;
+}
+.gauge-top {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 4px;
+  color: var(--panel-dim);
+}
+.reset {
+  font-variant-numeric: tabular-nums;
+}
+.bar {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--track);
+  overflow: hidden;
+}
+.fill {
+  height: 100%;
+  width: 0%;
+  border-radius: 999px;
+  background: var(--ok);
+  transition: width 0.4s ease, background 0.4s ease;
+}
+.fill.warn {
+  background: var(--warn);
+}
+.fill.crit {
+  background: var(--crit);
+}
+.pct {
+  margin-top: 2px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--panel-fg);
+}
+
+.waiting {
+  display: none;
+  color: var(--panel-dim);
+  text-align: center;
+  padding: 6px 0 2px;
+}
+#panel.no-limits #gauges {
+  display: none;
+}
+#panel.no-limits .waiting {
+  display: block;
+}
+
+.panel-foot {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  justify-content: space-between;
+  color: var(--panel-dim);
+}

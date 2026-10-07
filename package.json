@@ -1,0 +1,51 @@
+{
+  "name": "claude-pet",
+  "version": "0.1.0",
+  "description": "A floating desktop companion that tracks Claude Code token usage and session limits in real time.",
+  "main": "dist/main/index.js",
+  "author": "Pranav",
+  "license": "MIT",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "typecheck": "tsc --noEmit",
+    "start": "npm run build && electron .",
+    "dev": "node scripts/build.mjs --watch-run",
+    "install-statusline": "node scripts/install-statusline.mjs install",
+    "uninstall-statusline": "node scripts/install-statusline.mjs uninstall",
+    "dist": "npm run build && electron-builder"
+  },
+  "devDependencies": {
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8",
+    "esbuild": "^0.24.0",
+    "typescript": "^5.7.2"
+  },
+  "dependencies": {
+    "chokidar": "^4.0.1"
+  },
+  "build": {
+    "appId": "dev.pranav.claudepet",
+    "productName": "Claude Pet",
+    "files": [
+      "dist/**/*",
+      "bin/**/*",
+      "assets/**/*"
+    ],
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ]
+    },
+    "mac": {
+      "target": "dmg"
+    },
+    "linux": {
+      "target": "AppImage"
+    }
+  },
+  "allowScripts": {
+    "electron@33.4.11": true,
+    "esbuild@0.24.2": true
+  }
+}
