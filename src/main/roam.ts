@@ -82,7 +82,7 @@ export class RoamController {
     const [x, y] = win.getPosition();
     const home = this.homeSpot();
     if (Math.hypot(x - home.x, y - home.y) <= HOME_SNAP) {
-      win.setPosition(home.x, home.y);
+      this.place(win, home.x, home.y);
       this.homed = true;
       this.homedAt = Date.now();
     } else {
@@ -104,6 +104,17 @@ export class RoamController {
     return disp.workArea;
   }
 
+  /**
+   * Move the window. Electron's native setPosition only accepts finite integers
+   * and throws ("conversion failure") on NaN/Infinity; since this runs on a
+   * timer, one bad coordinate would crash the whole main process. Drop any
+   * non-finite coordinate instead of forwarding it.
+   */
+  private place(win: BrowserWindow, x: number, y: number): void {
+    if (!Number.isFinite(x) || !Number.isFinite(y)) return;
+    win.setPosition(Math.round(x), Math.round(y));
+  }
+
   private homeSpot() {
     const a = this.workArea();
     return {
@@ -116,10 +127,11 @@ export class RoamController {
     const a = this.workArea();
     const maxX = Math.max(a.x, a.x + a.width - WIN_W);
     const maxY = Math.max(a.y, a.y + a.height - WIN_H);
-    this.target = {
-      x: Math.round(a.x + Math.random() * (maxX - a.x)),
-      y: Math.round(a.y + Math.random() * (maxY - a.y)),
-    };
+    const x = Math.round(a.x + Math.random() * (maxX - a.x));
+    const y = Math.round(a.y + Math.random() * (maxY - a.y));
+    // Skip this round if the display geometry gave us a non-finite spot.
+    if (!Number.isFinite(x) || !Number.isFinite(y)) return;
+    this.target = { x, y };
   }
 
   private speedFor(mood: PetMood): number {
@@ -143,7 +155,7 @@ export class RoamController {
     // Being dragged: glue the window to the cursor.
     if (this.dragging) {
       const c = screen.getCursorScreenPoint();
-      win.setPosition(c.x - this.dragOffset.x, c.y - this.dragOffset.y);
+      this.place(win, c.x - this.dragOffset.x, c.y - this.dragOffset.y);
       return;
     }
 
@@ -168,15 +180,17 @@ export class RoamController {
     const dy = this.target.y - y;
     const dist = Math.hypot(dx, dy);
 
-    if (dist <= step) {
-      win.setPosition(this.target.x, this.target.y);
+    // Use !(dist > step) so a non-finite dist (NaN) also counts as "arrived"
+    // and is handled here rather than falling through into the move math below.
+    if (!(dist > step)) {
+      this.place(win, this.target.x, this.target.y);
       this.target = null;
       this.restUntil = now + this.restFor(mood);
       this.stopWalk();
       return;
     }
 
-    win.setPosition(Math.round(x + (dx / dist) * step), Math.round(y + (dy / dist) * step));
+    this.place(win, x + (dx / dist) * step, y + (dy / dist) * step);
     this.lastDir = dx >= 0 ? 1 : -1;
     this.wasMoving = true;
     this.emitWalk({ dir: this.lastDir, moving: true });
