@@ -40,21 +40,17 @@ body {
 #pet {
   cursor: grab;
   line-height: 0;
+  transform-origin: bottom center;
   filter: drop-shadow(0 5px 7px rgba(0, 0, 0, 0.3));
   animation: bob 3.4s ease-in-out infinite;
 }
 #pet:active {
   cursor: grabbing;
 }
-/* quick squash when clicked (overrides mood/idle anim briefly) */
-#pet.poke {
-  animation: poke 0.3s ease;
-}
-@keyframes poke {
-  0% { transform: scale(1, 1); }
-  35% { transform: scale(1.18, 0.82); }
-  70% { transform: scale(0.92, 1.08); }
-  100% { transform: scale(1, 1); }
+#eyes {
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: transform 0.18s ease;
 }
 
 /* facing direction flips the whole creature */
@@ -95,6 +91,17 @@ body {
 }
 .mood-working .body-px {
   fill: #ff7f5e;
+}
+
+/* tired: subtle — muted colour, slower bob, a little sigh emote */
+.mood-tired #pet {
+  animation: bob 4.8s ease-in-out infinite;
+}
+.mood-tired .body-px {
+  fill: #e0906e;
+}
+.mood-tired #emote {
+  opacity: 0.8;
 }
 
 .mood-sleepy #pet {
@@ -163,6 +170,77 @@ body {
 @keyframes shadow {
   0%, 100% { transform: scaleX(1); opacity: 0.26; }
   50% { transform: scaleX(0.82); opacity: 0.16; }
+}
+
+/* ---------- One-shot tricks & drag feedback ----------
+   Placed after the mood rules so equal-specificity selectors win and briefly
+   override the mood/idle animation while a trick plays. */
+#pet.poke { animation: poke 0.3s ease; }
+#pet.boop { animation: boop 0.38s ease; }
+#pet.stretch { animation: stretch 0.9s ease; }
+#pet.hop { animation: hop2 0.6s ease; }
+#pet.spin { animation: spin 0.7s ease; }
+#pet.lookaround { animation: lookaround 1.3s ease; }
+#pet.trip { animation: trip 0.7s ease; }
+#pet.wave { animation: wave 0.8s ease; }
+#pet.land { animation: land 0.34s ease; }
+#pet.held { animation: held 0.26s ease-in-out infinite; }
+
+@keyframes poke {
+  0% { transform: scale(1, 1); }
+  35% { transform: scale(1.18, 0.82); }
+  70% { transform: scale(0.92, 1.08); }
+  100% { transform: scale(1, 1); }
+}
+@keyframes boop {
+  0% { transform: scale(1, 1); }
+  35% { transform: scale(1.32, 0.7); }
+  70% { transform: scale(0.88, 1.14); }
+  100% { transform: scale(1, 1); }
+}
+@keyframes stretch {
+  0% { transform: scale(1, 1); }
+  35% { transform: scale(0.9, 1.16) translateY(-3px); }
+  65% { transform: scale(1.06, 0.95); }
+  100% { transform: scale(1, 1); }
+}
+@keyframes hop2 {
+  0% { transform: translateY(0); }
+  20% { transform: translateY(-13px); }
+  40% { transform: translateY(0); }
+  62% { transform: translateY(-8px); }
+  100% { transform: translateY(0); }
+}
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+@keyframes lookaround {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px) rotate(-3deg); }
+  60% { transform: translateX(5px) rotate(3deg); }
+}
+@keyframes trip {
+  0% { transform: translate(0, 0) rotate(0); }
+  18% { transform: translate(6px, 3px) rotate(-16deg); }
+  36% { transform: translate(10px, 0) rotate(6deg); }
+  55% { transform: translate(4px, 0) rotate(-4deg); }
+  100% { transform: translate(0, 0) rotate(0); }
+}
+@keyframes wave {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(9deg); }
+  55% { transform: rotate(-6deg); }
+  80% { transform: rotate(5deg); }
+}
+@keyframes land {
+  0% { transform: scale(0.8, 1.12) translateY(-6px); }
+  55% { transform: scale(1.1, 0.9); }
+  100% { transform: scale(1, 1); }
+}
+@keyframes held {
+  0%, 100% { transform: rotate(-6deg) translateY(-1px); }
+  50% { transform: rotate(6deg) translateY(1px); }
 }
 
 /* ---------- Speech bubble ---------- */

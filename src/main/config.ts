@@ -1,5 +1,7 @@
 // Tunable thresholds and timings for the pet's behaviour.
 export const config = {
+  /** used_percentage at/above which the pet starts looking tired. */
+  tiredThreshold: 60,
   /** used_percentage at/above which the pet looks stressed. */
   warnThreshold: 80,
   /** used_percentage at/above which the pet panics + a notification fires. */
@@ -8,6 +10,8 @@ export const config = {
   workingWindowMs: 6_000,
   /** No activity for this long => "sleepy". */
   sleepyAfterMs: 5 * 60_000,
+  /** After parking at home, stay awake this long before dozing off. */
+  homeNapMs: 25_000,
   /** How often main recomputes mood/countdowns and repaints. */
   tickMs: 1_000,
 };

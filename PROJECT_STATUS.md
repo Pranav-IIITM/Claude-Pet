@@ -56,11 +56,19 @@ stats panel + speech bubbles).
 - `assets/` — tray/app icons (coral mascot).
 
 ## Implemented
-- Pixel Claude mascot, coral, mood-tinted; blink, bob, wiggle, shake, walk-hop, poke.
+- Pixel Claude mascot, coral, mood-tinted; blink, bob, wiggle, shake, walk-hop.
 - Autonomous roaming (mood-aware speed + rests); faces direction.
-- Click (poke + reaction), drag (cursor-follow, pointer capture), **home** park/nap in
+- **Idle micro-tricks** (one-shot CSS, played while resting): stretch, double-hop,
+  spin, look-around, trip+recover (`·_·`), wave. Low-frequency, quiet by default.
+- **Cursor look**: eyes track the pointer when nearby (`onLook`, from the main hover
+  poll).
+- Click (poke + reaction), **double-click** (BOOP), drag (cursor-follow, pointer
+  capture) with **struggle** + **land** animations, **home** park/nap in the
   bottom-right, drag-out to resume.
-- Moods: idle / working / stressed / panic / sleepy (sleepy only at home).
+- **Personality memory** (tiny, localStorage): poke/drag counts → occasional
+  "boop again?".
+- Moods: idle / working / **tired (≥60%)** / stressed (≥80) / panic (≥95) / sleepy
+  (only when homed).
 - Speech bubbles on mood transitions + idle chatter.
 - Hover stats panel: 5h/7d gauges + reset countdowns, model, surface (CLI/VS Code/
   Desktop), session tokens, cost. Robust hover via main-process cursor polling.
@@ -87,9 +95,17 @@ stats panel + speech bubbles).
 - Status-line hook: `npm run install-statusline` / `npm run uninstall-statusline`.
 
 ## Changelog
+- **2026-10-07** (personality pass)
+  - Moved home further into the bottom-right (`HOME_RIGHT`/`HOME_BOTTOM`), lower than
+    before.
+  - Added idle micro-tricks (stretch/hop/spin/look-around/trip/wave), cursor eye-
+    tracking (`pet:look`), double-click BOOP, drag struggle + landing, and a `tired`
+    mood tier (≥60%). Added tiny localStorage personality memory (poke/drag counts).
+  - When parked at home the pet now stays completely still (no tricks, no cursor
+    tracking) and only dozes off after a delay (`config.homeNapMs`), via
+    `roam.homedSince` + `AppState.homed`.
 - **2026-10-07**
-  - Lowered the home spot (`HOME_LIFT` 72→36) so it sits just above the taskbar, not
-    floating high.
+  - Lowered the home spot so it sits just above the taskbar, not floating high.
   - Added `PET_ACTIVITIES.md` and this `PROJECT_STATUS.md`.
   - Fixed stuck stats panel: hover is now decided in the main process (cursor vs. live
     window bounds), robust to the window roaming out from under a stationary cursor.

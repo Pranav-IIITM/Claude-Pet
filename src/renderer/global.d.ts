@@ -1,5 +1,5 @@
 import type { AppState } from "../shared/types";
-import type { WalkMsg } from "../preload/index";
+import type { WalkMsg, LookMsg } from "../preload/index";
 
 declare global {
   interface Window {
@@ -8,6 +8,7 @@ declare global {
       onWalk(cb: (msg: WalkMsg) => void): void;
       onSpeak(cb: (text: string) => void): void;
       onHover(cb: (hovering: boolean) => void): void;
+      onLook(cb: (dir: LookMsg) => void): void;
       dragStart(): void;
       dragEnd(wasClick: boolean): void;
     };

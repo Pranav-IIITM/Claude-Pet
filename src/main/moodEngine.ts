@@ -10,7 +10,7 @@ export function deriveMood(input: {
   fiveHour: GaugeState;
   sevenDay: GaugeState;
   lastActivityTs: number;
-  homed: boolean;
+  homedSince: number;
   now: number;
 }): PetMood {
   const peak = maxPercent(input.fiveHour, input.sevenDay);
@@ -20,9 +20,11 @@ export function deriveMood(input: {
   const sinceActivity = input.now - input.lastActivityTs;
   if (input.lastActivityTs > 0 && sinceActivity <= config.workingWindowMs) return "working";
 
-  // It only naps in its home; out roaming it stays awake (idle).
-  if (input.homed) {
-    if (input.lastActivityTs === 0 || sinceActivity >= config.sleepyAfterMs) return "sleepy";
-  }
+  // It only naps in its home — and only after settling there for a while.
+  // Out roaming it stays awake.
+  if (input.homedSince > 0 && input.now - input.homedSince >= config.homeNapMs) return "sleepy";
+
+  // Mild tiredness as usage climbs (subtle, between idle and stressed).
+  if (peak >= config.tiredThreshold) return "tired";
   return "idle";
 }

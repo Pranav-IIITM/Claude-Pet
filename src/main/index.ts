@@ -10,7 +10,7 @@ import { deriveMood } from "./moodEngine";
 import { AlertManager } from "./alertManager";
 import { RoamController } from "./roam";
 import { createPetWindow } from "./window";
-import { pushState, sendHover, speak } from "./ipc";
+import { pushState, sendHover, sendLook, speak } from "./ipc";
 import type { AppState, PetMood } from "../shared/types";
 
 let win: BrowserWindow | null = null;
@@ -20,6 +20,7 @@ let hoverPoll: NodeJS.Timeout | null = null;
 let roam: RoamController | null = null;
 let lastMood: PetMood = "idle";
 let hovering = false;
+let lastLook = { x: 0, y: 0 };
 
 const store = new UsageStore();
 const alerts = new AlertManager();
@@ -33,6 +34,7 @@ function speechForTransition(prev: PetMood, next: PetMood): string | null {
     case "working": return "Let's code!";
     case "panic": return "Almost out!";
     case "stressed": return "Careful…";
+    case "tired": return "getting warm…";
     case "sleepy": return "zzz…";
     case "idle":
       if (prev === "working") return "Done! 🎉";
@@ -54,7 +56,7 @@ function buildState(): AppState {
     fiveHour: s.fiveHour,
     sevenDay: s.sevenDay,
     lastActivityTs: s.lastActivityTs,
-    homed: roam?.isHomed ?? false,
+    homedSince: roam?.homedSince ?? 0,
     now: Date.now(),
   });
   return {
@@ -66,6 +68,7 @@ function buildState(): AppState {
     costUsd: s.costUsd,
     activeSurface: s.activeSurface,
     hasRateLimits: s.hasRateLimits,
+    homed: roam?.isHomed ?? false,
     updatedAt: Date.now(),
   };
 }
@@ -110,6 +113,33 @@ function updateHover(): void {
   sendHover(win, next);
 }
 
+// The pet glances toward the cursor when it's nearby (subtle eye tracking).
+function updateLook(): void {
+  if (!win || win.isDestroyed() || !win.isVisible()) return;
+  let lx = 0;
+  let ly = 0;
+  // No cursor tracking while dragging, hovering, or parked at home.
+  if (!roam?.isDragging && !hovering && !roam?.isHomed) {
+    const cur = screen.getCursorScreenPoint();
+    const b = win.getBounds();
+    const dx = cur.x - (b.x + b.width / 2);
+    const dy = cur.y - (b.y + 239); // pet's visual centre
+    if (Math.hypot(dx, dy) <= 260) {
+      lx = Math.max(-1, Math.min(1, dx / 120));
+      ly = Math.max(-1, Math.min(1, dy / 120));
+    }
+  }
+  if (Math.abs(lx - lastLook.x) > 0.08 || Math.abs(ly - lastLook.y) > 0.08) {
+    lastLook = { x: lx, y: ly };
+    sendLook(win, lastLook);
+  }
+}
+
+function poll(): void {
+  updateHover();
+  updateLook();
+}
+
 function createTray(): void {
   let image = nativeImage.createFromPath(join(app.getAppPath(), "assets", "tray.png"));
   if (image.isEmpty()) image = nativeImage.createEmpty();
@@ -139,7 +169,7 @@ app.whenReady().then(() => {
   roam = new RoamController(() => win, () => lastMood);
   createTray();
   roam.start();
-  hoverPoll = setInterval(updateHover, 60);
+  hoverPoll = setInterval(poll, 60);
 
   // Direct manipulation: drag follows the cursor; dropping in the corner parks
   // the pet at home; a click (no real movement) pokes it.

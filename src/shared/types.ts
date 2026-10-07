@@ -1,6 +1,6 @@
 // Types shared between the Electron main process and the renderer.
 
-export type PetMood = "sleepy" | "idle" | "working" | "stressed" | "panic";
+export type PetMood = "sleepy" | "idle" | "working" | "tired" | "stressed" | "panic";
 
 export type Surface = "cli" | "vscode" | "desktop" | "unknown";
 
@@ -23,5 +23,7 @@ export interface AppState {
   activeSurface: Surface;
   /** True once the native rate-limit feed has reported at least once. */
   hasRateLimits: boolean;
+  /** True while the pet is parked in its home corner. */
+  homed: boolean;
   updatedAt: number;
 }

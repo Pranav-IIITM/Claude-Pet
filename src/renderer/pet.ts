@@ -1,11 +1,12 @@
 import type { AppState, GaugeState, PetMood, Surface } from "../shared/types";
-import type { WalkMsg } from "../preload/index";
+import type { WalkMsg, LookMsg } from "../preload/index";
 
 const WARN = 80;
 const CRIT = 95;
 
 const EMOTES: Partial<Record<PetMood, string>> = {
   sleepy: "z",
+  tired: "~",
   stressed: "!",
   panic: "!!",
 };
@@ -15,6 +16,7 @@ const SURFACE_LABEL: Record<Surface, string> = {
   desktop: "Desktop",
   unknown: "—",
 };
+const MOOD_CLASSES = ["mood-idle", "mood-working", "mood-tired", "mood-sleepy", "mood-stressed", "mood-panic"];
 
 const $ = (id: string) => document.getElementById(id)!;
 
@@ -22,7 +24,9 @@ const stage = $("stage");
 const panel = $("panel");
 const speech = $("speech");
 const pet = $("pet");
+const emote = $("emote");
 const bodyGroup = document.querySelector<SVGGElement>("#body-group")!;
+const eyes = document.querySelector<SVGGElement>("#eyes")!;
 
 let latest: AppState | null = null;
 
@@ -44,12 +48,53 @@ window.pet.onWalk((msg: WalkMsg) => {
   bodyGroup.style.transform = msg.dir === 1 ? "scaleX(-1)" : "scaleX(1)";
 });
 
+/* ---------- cursor look (subtle eye tracking) ---------- */
+window.pet.onLook((d: LookMsg) => {
+  eyes.style.transform = `translate(${d.x * 3}px, ${d.y * 2}px)`;
+});
+
+/* ---------- one-shot "trick" animations ---------- */
+const ONESHOTS = ["poke", "boop", "stretch", "hop", "spin", "lookaround", "trip", "wave", "land"];
+function playOneShot(cls: string) {
+  ONESHOTS.forEach((c) => pet.classList.remove(c));
+  void pet.offsetWidth; // restart animation
+  pet.classList.add(cls);
+}
+pet.addEventListener("animationend", () => ONESHOTS.forEach((c) => pet.classList.remove(c)));
+
+function flashEmote(ch: string, ms = 1000) {
+  emote.textContent = ch;
+  window.setTimeout(() => {
+    if (emote.textContent === ch) emote.textContent = EMOTES[latest?.mood ?? "idle"] ?? "";
+  }, ms);
+}
+
+/* ---------- personality memory (tiny, local) ---------- */
+function mem(key: string, def: number): number {
+  try {
+    const v = localStorage.getItem("pet." + key);
+    return v == null ? def : Number(v) || def;
+  } catch {
+    return def;
+  }
+}
+function setMem(key: string, val: number) {
+  try {
+    localStorage.setItem("pet." + key, String(val));
+  } catch {
+    /* ignore */
+  }
+}
+
 /* ---------- drag + click (main moves the window) ---------- */
 const POKE_LINES = ["hi!", "boop!", "yes?", "hehe", "pet me!", "♥"];
+let lastClickAt = 0;
+let held = false;
 pet.addEventListener("pointerdown", (e) => {
   if (e.button !== 0) return;
   dragging = true;
   moved = 0;
+  held = false;
   try {
     pet.setPointerCapture(e.pointerId);
   } catch {
@@ -59,7 +104,12 @@ pet.addEventListener("pointerdown", (e) => {
   e.preventDefault();
 });
 pet.addEventListener("pointermove", (e) => {
-  if (dragging) moved += Math.abs(e.movementX) + Math.abs(e.movementY);
+  if (!dragging) return;
+  moved += Math.abs(e.movementX) + Math.abs(e.movementY);
+  if (moved > 8 && !held) {
+    held = true;
+    pet.classList.add("held"); // little struggle while carried
+  }
 });
 pet.addEventListener("pointerup", (e) => {
   if (!dragging) return;
@@ -71,15 +121,29 @@ pet.addEventListener("pointerup", (e) => {
   }
   const wasClick = moved < 6;
   window.pet.dragEnd(wasClick);
-  if (wasClick) poke();
+  if (held) {
+    pet.classList.remove("held");
+    playOneShot("land"); // tiny landing squash
+    setMem("dragged", mem("dragged", 0) + 1);
+  }
+  held = false;
+  if (wasClick) {
+    const now = Date.now();
+    if (now - lastClickAt < 320) doubleBoop();
+    else poke();
+    lastClickAt = now;
+  }
 });
 function poke() {
-  say(POKE_LINES[Math.floor(Math.random() * POKE_LINES.length)], 1500);
-  pet.classList.remove("poke");
-  void pet.offsetWidth; // restart animation
-  pet.classList.add("poke");
+  const n = mem("poked", 0) + 1;
+  setMem("poked", n);
+  say(n % 8 === 0 ? "boop again?" : POKE_LINES[Math.floor(Math.random() * POKE_LINES.length)], 1500);
+  playOneShot("poke");
 }
-pet.addEventListener("animationend", () => pet.classList.remove("poke"));
+function doubleBoop() {
+  say("BOOP!", 1600);
+  playOneShot("boop");
+}
 
 /* ---------- speech bubble ---------- */
 let speechTimer: number | undefined;
@@ -95,12 +159,40 @@ function say(text: string, ms = 2800) {
 }
 window.pet.onSpeak((text) => say(text));
 
-// Layer-1 personality: occasional idle chatter while ambling.
+/* ---------- Layer-1 personality: idle chatter + micro "tricks" ---------- */
 const IDLE_LINES = ["hmm…", "la la la~", "where to?", "☕", "nice day", "boop"];
+const TRICKS = ["stretch", "hop", "spin", "lookaround"];
+// Quiet while hovered, dragged, parked at home, walking, or not plainly idle.
+function idleBusy(): boolean {
+  return (
+    hovered ||
+    dragging ||
+    !latest ||
+    latest.mood !== "idle" ||
+    latest.homed ||
+    stage.classList.contains("walking")
+  );
+}
+// Occasional chatter.
 setInterval(() => {
-  if (hovered || dragging || !latest || latest.mood !== "idle") return;
+  if (idleBusy()) return;
   if (Math.random() < 0.35) say(IDLE_LINES[Math.floor(Math.random() * IDLE_LINES.length)], 2000);
 }, 22_000);
+// Random micro-behaviours while resting (quiet most of the time).
+setInterval(() => {
+  if (idleBusy() || pet.classList.contains("held")) return;
+  const r = Math.random();
+  if (r < 0.16) {
+    playOneShot("trip"); // trips, then pretends nothing happened
+    window.setTimeout(() => flashEmote("·_·", 1100), 650);
+  } else if (r < 0.3) {
+    playOneShot("wave");
+    say("👋", 1300);
+  } else if (r < 0.62) {
+    playOneShot(TRICKS[Math.floor(Math.random() * TRICKS.length)]);
+  }
+  // otherwise: stay quiet this tick
+}, 7000);
 
 /* ---------- formatting ---------- */
 function fmtTokens(n: number): string {
@@ -134,9 +226,9 @@ function renderGauge(g: GaugeState, fill: HTMLElement, pctEl: HTMLElement, reset
 
 /* ---------- main render ---------- */
 function render(state: AppState) {
-  stage.classList.remove("mood-idle", "mood-working", "mood-sleepy", "mood-stressed", "mood-panic");
+  stage.classList.remove(...MOOD_CLASSES);
   stage.classList.add(`mood-${state.mood}`);
-  $("emote").textContent = EMOTES[state.mood] ?? "";
+  emote.textContent = EMOTES[state.mood] ?? "";
 
   panel.classList.toggle("no-limits", !state.hasRateLimits);
   $("surface-tag").textContent = SURFACE_LABEL[state.activeSurface];

@@ -6,6 +6,11 @@ export interface WalkMsg {
   moving: boolean;
 }
 
+export interface LookMsg {
+  x: number;
+  y: number;
+}
+
 contextBridge.exposeInMainWorld("pet", {
   onState(cb: (state: AppState) => void): void {
     ipcRenderer.on("pet:state", (_e, state: AppState) => cb(state));
@@ -18,6 +23,9 @@ contextBridge.exposeInMainWorld("pet", {
   },
   onHover(cb: (hovering: boolean) => void): void {
     ipcRenderer.on("pet:hover", (_e, hovering: boolean) => cb(hovering));
+  },
+  onLook(cb: (dir: LookMsg) => void): void {
+    ipcRenderer.on("pet:look", (_e, dir: LookMsg) => cb(dir));
   },
   dragStart(): void {
     ipcRenderer.send("pet:drag-start");

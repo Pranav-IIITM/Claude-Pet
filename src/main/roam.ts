@@ -4,9 +4,10 @@ import type { PetMood } from "../shared/types";
 // Must match the window size/margin in window.ts so the window stays on-screen.
 const WIN_W = 260;
 const WIN_H = 300;
-const MARGIN = 24;
-// Lift home above the taskbar / system tray so the pet doesn't overlap it.
-const HOME_LIFT = 36;
+// Home position offsets (negative pushes further into the corner). Tuned so the
+// pet sits toward the bottom-right, just clear of the taskbar / tray.
+const HOME_RIGHT = -30;
+const HOME_BOTTOM = 40;
 // Drop within this distance of the home spot => the pet goes home and sits.
 const HOME_SNAP = 190;
 
@@ -24,6 +25,7 @@ export class RoamController {
   private hover = false;
   private dragging = false;
   private homed = false;
+  private homedAt = 0;
   private dragOffset = { x: 0, y: 0 };
 
   private target: { x: number; y: number } | null = null;
@@ -50,6 +52,10 @@ export class RoamController {
   get isHomed(): boolean {
     return this.homed;
   }
+  /** Timestamp (ms) when the pet last arrived home, or 0 if not homed. */
+  get homedSince(): number {
+    return this.homed ? this.homedAt : 0;
+  }
   get isDragging(): boolean {
     return this.dragging;
   }
@@ -63,6 +69,7 @@ export class RoamController {
     this.dragOffset = { x: c.x - x, y: c.y - y };
     this.dragging = true;
     this.homed = false;
+    this.homedAt = 0;
     this.target = null;
     this.stopWalk();
   }
@@ -77,8 +84,10 @@ export class RoamController {
     if (Math.hypot(x - home.x, y - home.y) <= HOME_SNAP) {
       win.setPosition(home.x, home.y);
       this.homed = true;
+      this.homedAt = Date.now();
     } else {
       this.homed = false;
+      this.homedAt = 0;
       this.restUntil = Date.now() + 600; // settle before wandering off
     }
     this.stopWalk();
@@ -98,8 +107,8 @@ export class RoamController {
   private homeSpot() {
     const a = this.workArea();
     return {
-      x: a.x + a.width - WIN_W - MARGIN,
-      y: a.y + a.height - WIN_H - MARGIN - HOME_LIFT,
+      x: a.x + a.width - WIN_W - HOME_RIGHT,
+      y: a.y + a.height - WIN_H - HOME_BOTTOM,
     };
   }
 
